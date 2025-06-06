@@ -2,30 +2,55 @@
 
 namespace app\models;
 
-class User extends \yii\base\BaseObject implements \yii\web\IdentityInterface
-{
-    public $id;
-    public $username;
-    public $password;
-    public $authKey;
-    public $accessToken;
+use Yii;
+use yii\base\Exception;
+use yii\db\ActiveQuery;
+use yii\db\ActiveRecord;
+use yii\rbac\Assignment;
+use yii\web\IdentityInterface;
 
-    private static $users = [
-        '100' => [
-            'id' => '100',
-            'username' => 'admin',
-            'password' => 'admin',
-            'authKey' => 'test100key',
-            'accessToken' => '100-token',
-        ],
-        '101' => [
-            'id' => '101',
-            'username' => 'demo',
-            'password' => 'demo',
-            'authKey' => 'test101key',
-            'accessToken' => '101-token',
-        ],
-    ];
+class User extends ActiveRecord implements IdentityInterface
+{
+    const ROLE_ADMIN = 'admin';
+    const ROLE_MANAGER = 'manager';
+    const ROLE_CUSTOMER = 'customer';
+
+    public static function tableName(): string
+    {
+        return '{{%users}}';
+    }
+
+    public function rules(): array
+    {
+        return [
+            [['username'], 'required'],
+            ['password', 'required', 'on' => 'create'], // password обязателен только при создании
+            ['password', 'string', 'min' => 6, 'max' => 255], // Делает 'password' безопасным и проверяет длину
+            [['username'], 'string', 'max' => 255],
+            [['username'], 'unique'],
+            [['password', 'token'], 'string', 'max' => 255],
+            [['role'], 'in', 'range' => array_keys(self::getRoleList())],
+        ];
+    }
+
+    public function attributeLabels(): array
+    {
+        return [
+            'id' => 'ID',
+            'username' => 'Имя пользователя',
+            'password' => 'Пароль',
+            'email' => 'Электронная почта',
+            'token' => 'Токен',
+            'role' => 'Роль',
+            'created_at' => 'Дата создания',
+            'updated_at' => 'Дата обновления',
+        ];
+    }
+
+    public function getOrders(): ActiveQuery
+    {
+        return $this->hasMany(Order::class, ['user_id' => 'id']);
+    }
 
 
     /**
@@ -33,7 +58,7 @@ class User extends \yii\base\BaseObject implements \yii\web\IdentityInterface
      */
     public static function findIdentity($id)
     {
-        return isset(self::$users[$id]) ? new static(self::$users[$id]) : null;
+        return static::findOne($id);
     }
 
     /**
@@ -41,13 +66,7 @@ class User extends \yii\base\BaseObject implements \yii\web\IdentityInterface
      */
     public static function findIdentityByAccessToken($token, $type = null)
     {
-        foreach (self::$users as $user) {
-            if ($user['accessToken'] === $token) {
-                return new static($user);
-            }
-        }
-
-        return null;
+        return static::findOne(['token' => $token]);
     }
 
     /**
@@ -56,15 +75,9 @@ class User extends \yii\base\BaseObject implements \yii\web\IdentityInterface
      * @param string $username
      * @return static|null
      */
-    public static function findByUsername($username)
+    public static function findByUsername(string $username): ?User
     {
-        foreach (self::$users as $user) {
-            if (strcasecmp($user['username'], $username) === 0) {
-                return new static($user);
-            }
-        }
-
-        return null;
+        return static::findOne(['username' => $username]);
     }
 
     /**
@@ -78,27 +91,78 @@ class User extends \yii\base\BaseObject implements \yii\web\IdentityInterface
     /**
      * {@inheritdoc}
      */
-    public function getAuthKey()
+    public function getAuthKey(): ?string
     {
-        return $this->authKey;
+        return $this->token;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function validateAuthKey($authKey)
+    public function validateAuthKey($authKey): bool
     {
-        return $this->authKey === $authKey;
+        return $this->getAuthKey() === $authKey;
     }
 
     /**
-     * Validates password
+     * Проверка правильности пароля.
      *
-     * @param string $password password to validate
-     * @return bool if password provided is valid for current user
+     * @param string $password Введённый пароль
+     * @return bool True, если пароль совпадает
      */
-    public function validatePassword($password)
+    public function validatePassword(string $password): bool
     {
-        return $this->password === $password;
+        return \Yii::$app->getSecurity()->validatePassword($password, $this->password);
+    }
+
+    /**
+     * Перед сохранением хэшируем пароль, если он был изменён.
+     *
+     * @param bool $insert Указывает, создаётся ли новая запись
+     * @return bool
+     * @throws Exception
+     */
+    public function beforeSave($insert): bool
+    {
+        if (parent::beforeSave($insert)) {
+            if ($this->isAttributeChanged('password') && !empty($this->password)) {
+                $this->password = Yii::$app->security->generatePasswordHash($this->password);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    public static function getRoleList(): array
+    {
+        return [
+            self::ROLE_ADMIN => 'Администратор', // Или 'Admin'
+            self::ROLE_MANAGER => 'Менеджер',     // Или 'Manager'
+            self::ROLE_CUSTOMER => 'Покупатель', // Или 'Customer'
+        ];
+    }
+
+    /**
+     * Возвращает присвоенные роли для данного пользователя.
+     * Использует поле 'role' из модели.
+     *
+     * @return Assignment[]
+     */
+    public function getAssignments(): array
+    {
+        $assignments = [];
+        $authManager = Yii::$app->authManager;
+        // Получаем объект роли на основе значения поля 'role' модели
+        $role = $authManager->getRole($this->role);
+        if ($role) {
+            // Создаем объект Assignment для этой роли
+            $assignment = new Assignment([
+                'userId' => (string)$this->getId(), // ID пользователя как строка
+                'roleName' => $role->name,
+                'createdAt' => time(), // Текущее время
+            ]);
+            $assignments[] = $assignment;
+        }
+        return $assignments;
     }
 }

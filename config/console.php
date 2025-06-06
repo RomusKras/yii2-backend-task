@@ -26,8 +26,20 @@ $config = [
             ],
         ],
         'db' => $db,
+        'authManager' => [
+            'class' => 'yii\rbac\PhpManager',
+            'defaultRoles' => ['customer'], // 'admin', 'manager',
+            'itemFile' => '@app/rbac/items.php', // Файл для хранения ролей и разрешений
+            'assignmentFile' => '@app/rbac/assignments.php', // Файл для хранения назначений
+//            'ruleFile' => '@app/rbac/rules.php', // Файл для правил (опционально)
+        ],
     ],
     'params' => $params,
+    'container' => [
+        'definitions' => [
+            'app\components\ExternalDataParserInterface' => 'app\components\ExternalDataParser',
+        ],
+    ],
     /*
     'controllerMap' => [
         'fixture' => [ // Fixture generation command line.

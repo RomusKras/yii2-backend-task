@@ -86,3 +86,78 @@ a.desc:after {
 .form-group {
     margin-bottom: 1rem;
 }
+
+.digital-noise-password-cell {
+    display: inline-block; /* Чтобы занимал столько места, сколько нужно контенту, но вел себя как блок */
+    position: relative;    /* Необходимо для абсолютного позиционирования псевдо-элемента ::before */
+    min-width: 130px;
+    height: 28px;
+    padding: 0 8px;
+    line-height: 28px;     /* Для вертикального выравнивания текста в ::before */
+    border: 1px solid #3a3f44;
+    background-color: #1a1d20;
+    color: #00ff7f;
+    font-family: 'Consolas', 'Menlo', 'Courier New', monospace;
+    font-size: 14px;
+    text-align: center;    /* Выравнивание анимированного текста по центру */
+    overflow: hidden;
+    user-select: none;
+    cursor: default;
+    border-radius: 4px;
+    box-shadow: 0 0 8px rgba(0, 255, 127, 0.15);
+    vertical-align: middle; /* Для лучшего выравнивания в ячейке таблицы */
+}
+
+.digital-noise-password-cell::before {
+    content: "********";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;         /* Для выравнивания по центру через align-items и justify-content */
+    align-items: center;
+    justify-content: center;
+    /* Две анимации: одна для смены символов, другая для эффекта мерцания/сдвига цвета */
+    animation: digitalScrambleText 0.18s infinite steps(1, end), /* Быстрая смена символов */
+    digitalFlickerEffect 1.2s infinite ease-in-out; /* Плавное мерцание */
+}
+
+/* Анимация для смены символов */
+@keyframes digitalScrambleText {
+    0%   { content: "d#t@*!pX"; }
+    10%  { content: "s^c&rMbL"; }
+    20%  { content: "p@$$w0rD"; }
+    30%  { content: "gH*!z^&q"; }
+    40%  { content: "aN!m8t0n"; }
+    50%  { content: "l0cK3d#?"; }
+    60%  { content: "s3Cr3t!!"; }
+    70%  { content: "xYz123@#"; }
+    80%  { content: "k&^aB*Cx"; }
+    90%  { content: "z!pQ*&^m"; }
+    100% { content: "EncRyPtD"; }
+}
+
+/* Анимация для эффекта мерцания/сдвига цвета */
+@keyframes digitalFlickerEffect {
+    0%, 100% {
+        color: #00ff7f;
+        opacity: 0.85;
+        text-shadow: 0 0 3px rgba(0, 255, 127, 0.5);
+    }
+    25% {
+        color: #33ff99;
+        opacity: 0.7;
+        text-shadow: 0 0 5px rgba(51, 255, 153, 0.4);
+    }
+    50% {
+        color: #00cc66;
+        opacity: 1;
+        text-shadow: 0 0 2px rgba(0, 204, 102, 0.6);
+    }
+    75% {
+        color: #66ffb3;
+        opacity: 0.75;
+        text-shadow: 0 0 4px rgba(102, 255, 179, 0.45);
+    }
+}
