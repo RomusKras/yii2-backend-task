@@ -31,3 +31,7 @@ tests/_support/_generated
 
 #vagrant folder
 /.vagrant
+/logs/yii2.localhost-access_log
+/yii2.localhost-access_log
+/logs/yii2.localhost-error_log
+/package.xml
