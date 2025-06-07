@@ -8,6 +8,7 @@ use app\models\OrderSearch;
 use app\models\Product;
 use Yii;
 use yii\db\Exception;
+use yii\db\Transaction;
 use yii\filters\AccessControl;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
@@ -130,23 +131,7 @@ class OrderController extends Controller
                 }
 
                 // Сохраняем товары заказа
-                foreach ($orderItemsData as $itemData) {
-                    if (!empty($itemData['product_id']) && !empty($itemData['count'])) {
-                        $orderItem = new OrderItem();
-                        $orderItem->order_id = $model->id;
-                        $orderItem->product_id = $itemData['product_id'];
-                        $orderItem->count = $itemData['count'];
-
-                        $product = Product::findOne($itemData['product_id']);
-                        $orderItem->price = $product->price;
-
-                        if (!$orderItem->save()) {
-                            throw new Exception('Не удалось сохранить товар заказа');
-                        }
-                    }
-                }
-
-                $transaction->commit();
+                $this->saveOrderItems($orderItemsData, $model, $transaction);
                 Yii::$app->session->setFlash('success', 'Заказ успешно создан');
                 return $this->redirect(['view', 'id' => $model->id]);
 
@@ -168,7 +153,7 @@ class OrderController extends Controller
      * If update is successful, the browser will be redirected to the 'view' page.
      * @param int $id
      * @return string|Response
-     * @throws NotFoundHttpException|Exception if the model cannot be found
+     * @throws NotFoundHttpException if the model cannot be found
      */
     public function actionUpdate(int $id)
     {
@@ -193,10 +178,10 @@ class OrderController extends Controller
                 // Рассчитываем общую стоимость
                 $totalPrice = 0;
                 foreach ($orderItemsData as $itemData) {
-                    if (!empty($itemData['product_id']) && !empty($itemData['count'])) {
+                    if (!empty($itemData['product_id']) && !empty($itemData['quantity'])) {
                         $product = Product::findOne($itemData['product_id']);
                         if ($product) {
-                            $totalPrice += $product->price * $itemData['count'];
+                            $totalPrice += $product->price * $itemData['quantity'];
                         }
                     }
                 }
@@ -211,23 +196,7 @@ class OrderController extends Controller
                 OrderItem::deleteAll(['order_id' => $model->id]);
 
                 // Сохраняем новые товары заказа
-                foreach ($orderItemsData as $itemData) {
-                    if (!empty($itemData['product_id']) && !empty($itemData['count'])) {
-                        $orderItem = new OrderItem();
-                        $orderItem->order_id = $model->id;
-                        $orderItem->product_id = $itemData['product_id'];
-                        $orderItem->count = $itemData['count'];
-
-                        $product = Product::findOne($itemData['product_id']);
-                        $orderItem->price = $product->price;
-
-                        if (!$orderItem->save()) {
-                            throw new Exception('Не удалось сохранить товар заказа');
-                        }
-                    }
-                }
-
-                $transaction->commit();
+                $this->saveOrderItems($orderItemsData, $model, $transaction);
                 Yii::$app->session->setFlash('success', 'Заказ успешно обновлен');
                 return $this->redirect(['view', 'id' => $model->id]);
 
@@ -271,5 +240,33 @@ class OrderController extends Controller
         }
 
         throw new NotFoundHttpException('The requested page does not exist.');
+    }
+
+    /**
+     * @param $orderItemsData
+     * @param Order $model
+     * @param Transaction|null $transaction
+     * @return void
+     * @throws Exception
+     */
+    public function saveOrderItems($orderItemsData, Order $model, ?Transaction $transaction): void
+    {
+        foreach ($orderItemsData as $itemData) {
+            if (!empty($itemData['product_id']) && !empty($itemData['quantity'])) {
+                $orderItem = new OrderItem();
+                $orderItem->order_id = $model->id;
+                $orderItem->product_id = $itemData['product_id'];
+                $orderItem->count = $itemData['quantity'];
+
+                $product = Product::findOne($itemData['product_id']);
+                $orderItem->price = $product->price;
+
+                if (!$orderItem->save()) {
+                    throw new Exception('Не удалось сохранить товар заказа');
+                }
+            }
+        }
+
+        $transaction->commit();
     }
 }

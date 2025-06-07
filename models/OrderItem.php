@@ -14,12 +14,10 @@ class OrderItem extends ActiveRecord
     public function rules(): array
     {
         return [
-            [['order_id', 'product_id', 'name', 'price', 'count'], 'required'],
+            [['order_id', 'product_id', 'price', 'count'], 'required'],
             [['order_id', 'product_id', 'count'], 'integer'],
             [['count'], 'integer', 'min' => 1],
             [['price'], 'number', 'min' => 0],
-            [['name'], 'string', 'max' => 255],
-            [['description'], 'string'],
         ];
     }
 
