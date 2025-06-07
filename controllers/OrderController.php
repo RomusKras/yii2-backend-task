@@ -4,6 +4,7 @@ namespace app\controllers;
 
 use app\models\Order;
 use app\models\OrderSearch;
+use Yii;
 use yii\db\Exception;
 use yii\filters\AccessControl;
 use yii\web\Controller;
@@ -93,7 +94,11 @@ class OrderController extends Controller
         $model = new Order();
 
         if ($this->request->isPost) {
-            if ($model->load($this->request->post()) && $model->save()) {
+            if (!$model->load($this->request->post())) {
+                Yii::$app->session->setFlash('error', 'Не удалось установить параметры модели заказа');
+            }
+            $model->user_id = Yii::$app->user->id;
+            if ($model->save()) {
                 return $this->redirect(['view', 'id' => $model->id]);
             }
         } else {

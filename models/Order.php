@@ -37,6 +37,9 @@ class Order extends ActiveRecord
             [['name'], 'string', 'max' => 255],
             [['status'], 'in', 'range' => array_keys(self::getStatusList())],
             [['date'], 'datetime', 'format' => 'php:Y-m-d H:i:s'],
+            ['date', 'filter', 'filter' => function($value) {
+                return date('Y-m-d H:i:s', strtotime($value));
+            }],
             [['total_price'], 'number', 'min' => 0],
         ];
     }
