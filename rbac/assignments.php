@@ -1,7 +1,7 @@
 <?php
 
 return [
-    5 => [
+    4 => [
         'manager',
     ],
 ];

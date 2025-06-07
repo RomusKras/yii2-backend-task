@@ -46,13 +46,15 @@ use yii\widgets\ActiveForm;
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-md-6">
-            <?= $form->field($model, 'status')->dropDownList($model::getStatusList(), [
-                'prompt' => '-- Выберите статус --'
-            ]) ?>
+    <?php if (!Yii::$app->user->isGuest && Yii::$app->user->can('updateOrders')): ?>
+        <div class="row">
+            <div class="col-md-6">
+                <?= $form->field($model, 'status')->dropDownList($model::getStatusList(), [
+                    'prompt' => '-- Выберите статус --'
+                ]) ?>
+            </div>
         </div>
-    </div>
+    <?php endif; ?>
 
     <?= $this->render('_order_items', [
         'model' => $model,

@@ -51,7 +51,15 @@ $this->params['breadcrumbs'][] = $this->title;
                 'class' => ActionColumn::className(),
                 'urlCreator' => function ($action, User $model, $key, $index, $column) {
                     return Url::toRoute([$action, 'id' => $model->id]);
-                 }
+                },
+                'visibleButtons' => [
+                    'update' => function ($model, $key, $index) {
+                        return Yii::$app->user->can('admin'); // Только админ может редактировать
+                    },
+                    'delete' => function ($model, $key, $index) {
+                        return Yii::$app->user->can('admin'); // Только админ может удалять
+                    },
+                ]
             ],
         ],
         'summary' => 'Показано {begin}-{end} из {totalCount} записей',

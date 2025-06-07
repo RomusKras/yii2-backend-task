@@ -30,6 +30,10 @@ class RbacController extends Controller
         $auth->add($customer);
 
         // Создаем разрешения
+        $viewUsers = $auth->createPermission('viewUsers');
+        $viewUsers->description = 'View users';
+        $auth->add($viewUsers);
+
         $updateOrders = $auth->createPermission('updateOrders');
         $updateOrders->description = 'Edit orders';
         $auth->add($updateOrders);
@@ -47,11 +51,13 @@ class RbacController extends Controller
         $auth->add($createUsers);
 
         // Связываем разрешения с ролями
+        $auth->addChild($admin, $viewUsers);
         $auth->addChild($admin, $updateOrders);
         $auth->addChild($admin, $viewOrders);
         $auth->addChild($admin, $createOrders);
         $auth->addChild($admin, $createUsers);
 
+        $auth->addChild($manager, $viewUsers);
         $auth->addChild($manager, $viewOrders);
         $auth->addChild($manager, $updateOrders);
 

@@ -4,6 +4,7 @@ return [
     'admin' => [
         'type' => 1,
         'children' => [
+            'viewUsers',
             'updateOrders',
             'viewOrders',
             'createOrders',
@@ -13,6 +14,7 @@ return [
     'manager' => [
         'type' => 1,
         'children' => [
+            'viewUsers',
             'viewOrders',
             'updateOrders',
         ],
@@ -22,6 +24,10 @@ return [
         'children' => [
             'createOrders',
         ],
+    ],
+    'viewUsers' => [
+        'type' => 2,
+        'description' => 'View users',
     ],
     'updateOrders' => [
         'type' => 2,

@@ -4,6 +4,7 @@ namespace app\controllers;
 
 use Yii;
 use yii\filters\AccessControl;
+use yii\helpers\Html;
 use yii\web\Controller;
 use yii\web\Response;
 use yii\filters\VerbFilter;
@@ -77,6 +78,42 @@ class SiteController extends Controller
 
         $model = new LoginForm();
         if ($model->load(Yii::$app->request->post()) && $model->login()) {
+            if (YII_DEBUG) {
+                $authManager = Yii::$app->authManager;
+                $userId = Yii::$app->user->id;
+
+                $debugHtml = '<div style="text-align: left;">';
+                $debugHtml .= '<p><strong>User ID:</strong> ' . $userId . '</p>';
+                $debugHtml .= '<p><strong>Username:</strong> ' . Yii::$app->user->identity->username . '</p>';
+
+                // Роли
+                $debugHtml .= '<h4 style="margin-top: 15px;">Роли:</h4>';
+                $roles = $authManager->getRolesByUser($userId);
+                if (!empty($roles)) {
+                    foreach ($roles as $role) {
+                        $debugHtml .= '<span class="badge" style="background: #5cb85c; margin: 2px;">'
+                            . Html::encode($role->name) . '</span> ';
+                    }
+                } else {
+                    $debugHtml .= '<em>Нет ролей</em>';
+                }
+
+                // Права
+                $debugHtml .= '<h4 style="margin-top: 15px;">Права доступа:</h4>';
+                $permissions = $authManager->getPermissionsByUser($userId);
+                if (!empty($permissions)) {
+                    foreach ($permissions as $permission) {
+                        $debugHtml .= '<span class="badge" style="background: #337ab7; margin: 2px;">'
+                            . Html::encode($permission->name) . '</span> ';
+                    }
+                } else {
+                    $debugHtml .= '<em>Нет прав</em>';
+                }
+
+                $debugHtml .= '</div>';
+
+                Yii::$app->session->setFlash('auth-debug-sweetalert', $debugHtml);
+            }
             return $this->goBack();
         }
 
@@ -96,5 +133,9 @@ class SiteController extends Controller
         Yii::$app->user->logout();
 
         return $this->goHome();
+    }
+
+    public function actionTask() {
+        return $this->render('task');
     }
 }

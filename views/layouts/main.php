@@ -9,6 +9,7 @@ use yii\bootstrap5\Breadcrumbs;
 use yii\bootstrap5\Html;
 use yii\bootstrap5\Nav;
 use yii\bootstrap5\NavBar;
+use yii\helpers\Json;
 
 AppAsset::register($this);
 
@@ -42,15 +43,17 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
         ['label' => 'Главная', 'url' => ['/site/index']],
         ['label' => 'Товары', 'url' => ['/product']],
         ['label' => 'Заказы', 'url' => ['/order']],
-        ['label' => 'Пользователи', 'url' => ['/user']],
     ];
-    // --- УСЛОВНО ДОБАВЛЯЕМ ССЫЛКУ НА АДМИНКУ ---
+
+    if (!Yii::$app->user->isGuest && Yii::$app->user->can('viewUsers')) {
+        $menuItems[] = ['label' => 'Пользователи', 'url' => ['/user']];
+    }
+
     // Проверяем условие
     if (!Yii::$app->user->isGuest && Yii::$app->user->can('admin')) {
         // Если условие истинно, добавляем элемент в конец массива
         $menuItems[] = ['label' => 'Админка', 'url' => ['/admin/index']];
     }
-    // --- КОНЕЦ УСЛОВНОГО ДОБАВЛЕНИЯ ---
 
     // Добавляем ссылку на вход/выход в зависимости от статуса аутентификации
     if (Yii::$app->user->isGuest) {
@@ -91,6 +94,25 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
         </div>
     </div>
 </footer>
+
+<?php if (YII_DEBUG && Yii::$app->session->hasFlash('auth-debug-sweetalert')): ?>
+    <?php
+    $debugContent = Yii::$app->session->getFlash('auth-debug-sweetalert');
+    $this->registerJs("
+    Swal.fire({
+        title: '🔐 Auth Debug Info',
+        html: " . Json::encode($debugContent) . ",
+        width: 600,
+        showCloseButton: true,
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#337ab7',
+        customClass: {
+            container: 'auth-debug-swal'
+        }
+    });
+");
+    ?>
+<?php endif; ?>
 
 <?php $this->endBody() ?>
 </body>
