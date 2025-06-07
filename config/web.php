@@ -85,6 +85,7 @@ $config = [
                 'product/<id:\d+>' => 'product/view',
                 'order/<id:\d+>' => 'order/view',
                 'order' => 'order/index',
+                'order/<action:(create)>' => 'order/<action>',
                 'user/<id:\d+>' => 'user/view',
                 'user' => 'user/index',
                 'product/<action:(create|update|delete)>/<id:\d*>' => 'product/<action>',
@@ -92,6 +93,7 @@ $config = [
                 'user/<action:(create|update|delete)>/<id:\d*>' => 'user/<action>',
                 'user/<action:(create|update|delete)>/' => 'user/<action>',
                 'admin/product/<id:\\d+>/edit' => 'admin/product/edit', // Маршрут для редактирования
+                'admin' => 'admin/admin/index',
             ],
 //
 //            'externalService' => [

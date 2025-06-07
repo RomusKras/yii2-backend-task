@@ -68,6 +68,7 @@ class UserController extends Controller
      * If creation is successful, the browser will be redirected to the 'view' page.
      * @return string|Response
      * @throws Exception
+     * @throws \Exception
      */
     public function actionCreate()
     {
@@ -76,6 +77,14 @@ class UserController extends Controller
         if ($this->request->isPost) {
             $model->load($this->request->post());
             if ($model->save()) {
+                if (!empty($model->role)) {
+                    $auth = Yii::$app->authManager;
+                    $role = $auth->getRole($model->role);
+                    if ($role && !empty($model->getId())) {
+                        $auth->revokeAll($model->getId());
+                        $auth->assign($role, $model->getId());
+                    }
+                }
                 return $this->redirect(['view', 'id' => $model->id]);
             }
         } else {
@@ -92,6 +101,7 @@ class UserController extends Controller
      * @param int $id
      * @return string|Response
      * @throws NotFoundHttpException|Exception if the model cannot be found
+     * @throws \Exception
      */
     public function actionUpdate(int $id)
     {
@@ -106,8 +116,24 @@ class UserController extends Controller
                 // Таким образом, load() не будет видеть и пытаться установить это пустое значение.
                 unset($postData['User']['password']);
             }
-            if ($model->load($postData) && $model->save()) {
-                return $this->redirect(['view', 'id' => $model->id]);
+
+            if ($model->load($postData)) {
+                if (!empty($model->role) && $model->isAttributeChanged('role')) {
+                    $auth = Yii::$app->authManager;
+                    $role = $auth->getRole($model->role);
+                    if ($role) {
+                        $auth->revokeAll($model->getId());
+                        $auth->assign($role, $model->getId());
+                    }
+                }
+                if ($model->save()) {
+                    // Если это текущий авторизованный пользователь, обновляем его сессию (как в afterSave)
+                    if (!Yii::$app->user->isGuest && Yii::$app->user->id == $model->id) {
+                        $model->refresh();
+                        Yii::$app->user->login($model, 3600 * 24 * 30);
+                    }
+                    return $this->redirect(['view', 'id' => $model->id]);
+                }
             }
         } else {
             // Это гарантирует, что поле passwordInput в форме будет пустым при редактировании.

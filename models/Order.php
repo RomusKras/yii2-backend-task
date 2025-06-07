@@ -15,14 +15,50 @@ class Order extends ActiveRecord
         return '{{%orders}}';
     }
 
+    /**
+     * Возвращает список возможных статусов заказов в виде массива для выпадающего списка или отображения.
+     * Ключи - значения статусов (из констант), значения - текстовые метки.
+     *
+     * @return array
+     */
+    public static function getStatusList(): array
+    {
+        return [
+            self::STATUS_PENDING => 'В ожидании',
+            self::STATUS_COMPLETED => 'Завершен',
+            self::STATUS_CANCELED => 'Отменен',
+        ];
+    }
+
     public function rules(): array
     {
         return [
             [['name', 'date', 'status', 'total_price'], 'required'],
             [['name'], 'string', 'max' => 255],
-            [['status'], 'in', 'range' => [self::STATUS_PENDING, self::STATUS_COMPLETED, self::STATUS_CANCELED]],
+            [['status'], 'in', 'range' => array_keys(self::getStatusList())],
             [['date'], 'datetime', 'format' => 'php:Y-m-d H:i:s'],
             [['total_price'], 'number', 'min' => 0],
+        ];
+    }
+
+    /**
+     * Возвращает метки (лейблы) атрибутов.
+     * Этот метод используется виджетами (ActiveForm, DetailView, GridView)
+     * для отображения пользовательских меток полей.
+     *
+     * @return array
+     */
+    public function attributeLabels(): array
+    {
+        return [
+            'id' => 'ID',
+            'name' => 'Название заказа',
+            'date' => 'Дата заказа',
+            'status' => 'Статус заказа',
+            'total_price' => 'Общая стоимость',
+            'user_id' => 'Пользователь',
+            'created_at' => 'Дата создания',
+            'updated_at' => 'Дата обновления',
         ];
     }
 

@@ -75,7 +75,7 @@ class OrderController extends Controller
      * @return string
      * @throws NotFoundHttpException if the model cannot be found
      */
-    public function actionView($id): string
+    public function actionView(int $id): string
     {
         return $this->render('view', [
             'model' => $this->findModel($id),

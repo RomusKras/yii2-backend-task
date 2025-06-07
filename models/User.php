@@ -2,6 +2,7 @@
 
 namespace app\models;
 
+use Throwable;
 use Yii;
 use yii\base\Exception;
 use yii\db\ActiveQuery;
@@ -143,26 +144,25 @@ class User extends ActiveRecord implements IdentityInterface
     }
 
     /**
-     * Возвращает присвоенные роли для данного пользователя.
-     * Использует поле 'role' из модели.
+     * Вызывается после успешного сохранения записи.
      *
-     * @return Assignment[]
+     * @param bool $insert Указывает, создавалась ли новая запись
+     * @param array $changedAttributes Атрибуты, которые были изменены (только при обновлении)
+     * @throws Throwable
      */
-    public function getAssignments(): array
+    public function afterSave($insert, $changedAttributes): void
     {
-        $assignments = [];
-        $authManager = Yii::$app->authManager;
-        // Получаем объект роли на основе значения поля 'role' модели
-        $role = $authManager->getRole($this->role);
-        if ($role) {
-            // Создаем объект Assignment для этой роли
-            $assignment = new Assignment([
-                'userId' => (string)$this->getId(), // ID пользователя как строка
-                'roleName' => $role->name,
-                'createdAt' => time(), // Текущее время
-            ]);
-            $assignments[] = $assignment;
+        parent::afterSave($insert, $changedAttributes);
+        // Проверяем, было ли изменено поле 'role'
+        // И если текущий пользователь авторизован И это та же модель, что и текущий авторизованный пользователь
+        if (isset($changedAttributes['role']) && !Yii::$app->user->isGuest && Yii::$app->user->id == $this->id) {
+            // --- ВОТ ИСПРАВЛЕННОЕ РЕШЕНИЕ ДЛЯ PHPManager ---
+            // Обновляем объект идентичности пользователя в компоненте user
+            // Метод login() с текущим identity обновит его состояние в сессии.
+            // Используем $this->refresh() чтобы получить свежие данные из базы.
+            $this->refresh();
+            Yii::$app->user->login($this, 3600 * 24 * 30);
+            // --- КОНЕЦ ИСПРАВЛЕННОГО РЕШЕНИЯ ---
         }
-        return $assignments;
     }
 }

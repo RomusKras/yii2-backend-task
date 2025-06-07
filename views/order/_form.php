@@ -1,5 +1,6 @@
 <?php
 
+use app\models\Order;
 use yii\helpers\Html;
 use yii\widgets\ActiveForm;
 
@@ -16,7 +17,11 @@ use yii\widgets\ActiveForm;
 
     <?= $form->field($model, 'date')->textInput() ?>
 
-    <?= $form->field($model, 'status')->textInput(['maxlength' => true]) ?>
+    <?php
+    // Используем статический метод из модели User
+    $statusOptions = Order::getStatusList();
+    ?>
+    <?= $form->field($model, 'status')->dropDownList($statusOptions, ['prompt' => 'Выберите статус']) ?>
 
     <?= $form->field($model, 'total_price')->textInput(['maxlength' => true]) ?>
 
