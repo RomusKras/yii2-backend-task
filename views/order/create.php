@@ -2,11 +2,12 @@
 
 use yii\helpers\Html;
 
-/** @var yii\web\View $this */
-/** @var app\models\Order $model */
+/* @var $this yii\web\View */
+/* @var $model app\models\Order */
+/* @var $products app\models\Product[] */
 
 $this->title = 'Create Order';
-$this->params['breadcrumbs'][] = ['label' => 'Orders', 'url' => ['index']];
+$this->params['breadcrumbs'][] = ['label' => 'Заказы', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;
 ?>
 <div class="order-create">
@@ -15,6 +16,7 @@ $this->params['breadcrumbs'][] = $this->title;
 
     <?= $this->render('_form', [
         'model' => $model,
+        'products' => $products,
     ]) ?>
 
 </div>

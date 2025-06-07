@@ -54,5 +54,7 @@ $this->params['breadcrumbs'][] = $this->title;
                  }
             ],
         ],
+        'summary' => 'Показано {begin}-{end} из {totalCount} записей',
+        'emptyText' => 'Ничего не найдено',
     ]); ?>
 </div>

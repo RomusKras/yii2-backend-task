@@ -3,7 +3,9 @@
 namespace app\controllers;
 
 use app\models\Order;
+use app\models\OrderItem;
 use app\models\OrderSearch;
+use app\models\Product;
 use Yii;
 use yii\db\Exception;
 use yii\filters\AccessControl;
@@ -92,21 +94,72 @@ class OrderController extends Controller
     public function actionCreate()
     {
         $model = new Order();
-
+        $products = Product::find()->all();
         if ($this->request->isPost) {
-            if (!$model->load($this->request->post())) {
-                Yii::$app->session->setFlash('error', 'Не удалось установить параметры модели заказа');
-            }
-            $model->user_id = Yii::$app->user->id;
-            if ($model->save()) {
+            $transaction = Yii::$app->db->beginTransaction();
+
+            try {
+                if (!$model->load($this->request->post())) {
+                    throw new Exception('Не удалось загрузить данные заказа');
+                }
+
+                $model->user_id = Yii::$app->user->id;
+
+                // Получаем данные о товарах из POST
+                $orderItemsData = Yii::$app->request->post('OrderItem', []);
+
+                if (empty($orderItemsData)) {
+                    throw new Exception('Необходимо выбрать хотя бы один товар');
+                }
+
+                // Рассчитываем общую стоимость
+                $totalPrice = 0;
+                foreach ($orderItemsData as $itemData) {
+                    if (!empty($itemData['product_id']) && !empty($itemData['count'])) {
+                        $product = Product::findOne($itemData['product_id']);
+                        if ($product) {
+                            $totalPrice += $product->price * $itemData['count'];
+                        }
+                    }
+                }
+
+                $model->total_price = $totalPrice;
+
+                if (!$model->save()) {
+                    throw new Exception('Не удалось сохранить заказ');
+                }
+
+                // Сохраняем товары заказа
+                foreach ($orderItemsData as $itemData) {
+                    if (!empty($itemData['product_id']) && !empty($itemData['count'])) {
+                        $orderItem = new OrderItem();
+                        $orderItem->order_id = $model->id;
+                        $orderItem->product_id = $itemData['product_id'];
+                        $orderItem->count = $itemData['count'];
+
+                        $product = Product::findOne($itemData['product_id']);
+                        $orderItem->price = $product->price;
+
+                        if (!$orderItem->save()) {
+                            throw new Exception('Не удалось сохранить товар заказа');
+                        }
+                    }
+                }
+
+                $transaction->commit();
+                Yii::$app->session->setFlash('success', 'Заказ успешно создан');
                 return $this->redirect(['view', 'id' => $model->id]);
+
+            } catch (Exception $e) {
+                $transaction->rollBack();
+                Yii::$app->session->setFlash('error', $e->getMessage());
             }
         } else {
             $model->loadDefaultValues();
         }
-
         return $this->render('create', [
             'model' => $model,
+            'products' => $products,
         ]);
     }
 
@@ -120,13 +173,73 @@ class OrderController extends Controller
     public function actionUpdate(int $id)
     {
         $model = $this->findModel($id);
+        $products = Product::find()->all();
 
-        if ($this->request->isPost && $model->load($this->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->id]);
+        if ($this->request->isPost) {
+            $transaction = Yii::$app->db->beginTransaction();
+
+            try {
+                if (!$model->load($this->request->post())) {
+                    throw new Exception('Не удалось загрузить данные заказа');
+                }
+
+                // Получаем данные о товарах из POST
+                $orderItemsData = Yii::$app->request->post('OrderItem', []);
+
+                if (empty($orderItemsData)) {
+                    throw new Exception('Необходимо выбрать хотя бы один товар');
+                }
+
+                // Рассчитываем общую стоимость
+                $totalPrice = 0;
+                foreach ($orderItemsData as $itemData) {
+                    if (!empty($itemData['product_id']) && !empty($itemData['count'])) {
+                        $product = Product::findOne($itemData['product_id']);
+                        if ($product) {
+                            $totalPrice += $product->price * $itemData['count'];
+                        }
+                    }
+                }
+
+                $model->total_price = $totalPrice;
+
+                if (!$model->save()) {
+                    throw new Exception('Не удалось сохранить заказ');
+                }
+
+                // Удаляем старые товары заказа
+                OrderItem::deleteAll(['order_id' => $model->id]);
+
+                // Сохраняем новые товары заказа
+                foreach ($orderItemsData as $itemData) {
+                    if (!empty($itemData['product_id']) && !empty($itemData['count'])) {
+                        $orderItem = new OrderItem();
+                        $orderItem->order_id = $model->id;
+                        $orderItem->product_id = $itemData['product_id'];
+                        $orderItem->count = $itemData['count'];
+
+                        $product = Product::findOne($itemData['product_id']);
+                        $orderItem->price = $product->price;
+
+                        if (!$orderItem->save()) {
+                            throw new Exception('Не удалось сохранить товар заказа');
+                        }
+                    }
+                }
+
+                $transaction->commit();
+                Yii::$app->session->setFlash('success', 'Заказ успешно обновлен');
+                return $this->redirect(['view', 'id' => $model->id]);
+
+            } catch (Exception $e) {
+                $transaction->rollBack();
+                Yii::$app->session->setFlash('error', $e->getMessage());
+            }
         }
 
         return $this->render('update', [
             'model' => $model,
+            'products' => $products,
         ]);
     }
 
