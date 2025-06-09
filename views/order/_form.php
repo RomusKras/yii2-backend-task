@@ -23,6 +23,14 @@ use yii\widgets\ActiveForm;
                 'placeholder' => 'Введите название заказа'
             ]) ?>
         </div>
+        <?php if (!Yii::$app->user->isGuest && Yii::$app->user->can('updateOrders')): ?>
+            <div class="col-md-6">
+                <?= $form->field($model, 'user_id')->textInput([
+                    'maxlength' => true,
+                    'placeholder' => 'Введите ID клиента'
+                ]) ?>
+            </div>
+        <?php endif; ?>
         <div class="col-md-6">
             <?= $form->field($model, 'date')->textInput([
                 'id' => 'datetime-field',

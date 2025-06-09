@@ -104,7 +104,13 @@ class OrderController extends Controller
                     throw new Exception('Не удалось загрузить данные заказа');
                 }
 
-                $model->user_id = Yii::$app->user->id;
+                $user = Yii::$app->user->identity;
+                if (in_array($user->role, ['admin', 'manager'])) {
+                    $tempOrder = Yii::$app->request->post('Order', ['user_id' => $user->getId()]);
+                    $model->user_id = $tempOrder['user_id'];
+                } else {
+                    $model->user_id = $user->getId();
+                }
 
                 // Получаем данные о товарах из POST
                 $orderItemsData = Yii::$app->request->post('OrderItem', []);
